@@ -11,11 +11,11 @@ A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 - Syncs editable content with hidden inputs for form submission
 
 ```html
-<div id="toolbar">
-    <button data-cmd="bold">Bold</button>
-    <button data-cmd="italic">Italic</button>
-    <button data-cmd="underline">Underline</button>
-    <button data-cmd="link">Link</button>
+<div id="toolbar" style="display: none;">
+    <button title="Bold" data-cmd="bold">Bold</button>
+    <button title="Italic" data-cmd="italic">Italic</button>
+    <button title="Underline" data-cmd="underline">Underline</button>
+    <button title="Link" data-cmd="link">Link</button>
 </div>
 
 <div class="editor-block" contenteditable="true" data-id="1"></div>

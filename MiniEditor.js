@@ -33,7 +33,7 @@ class MiniEditor {
 		this.editor.addEventListener('paste', e => {
 			e.preventDefault();
 			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-			document.execCommand('insertText', false, text);
+			document.execCommand('insertText', false, text); // Optional: still allowed for plaintext paste
 		});
 
 		this.editor.addEventListener('input', () => {
@@ -59,24 +59,51 @@ class MiniEditor {
 	}
 
 	static executeCommand(cmd, value = null) {
+		const editor = MiniEditor.activeEditor?.editor;
+		if (!editor) return;
+
 		const sel = window.getSelection();
 		if (!sel.rangeCount || sel.isCollapsed) return;
 
-		if (cmd === 'link') {
-			let url = prompt('Enter URL:');
-			if (!url) return;
-			if (!url.startsWith('http')) url = 'http://' + url;
-			document.execCommand('createLink', false, url);
+		const range = sel.getRangeAt(0);
+		const content = range.extractContents();
+		let wrapper;
 
-			const a = document.getSelection().focusNode?.parentNode;
-			if (a && a.tagName === 'A') {
-				a.setAttribute('contenteditable', 'false');
-			}
-		} else {
-			document.execCommand(cmd, false, value);
+		switch (cmd) {
+			case 'bold':
+				wrapper = document.createElement('b');
+				break;
+			case 'italic':
+				wrapper = document.createElement('i');
+				break;
+			case 'underline':
+				wrapper = document.createElement('u');
+				break;
+			case 'link':
+				let url = prompt('Enter URL:');
+				if (!url) return;
+				if (!url.startsWith('http')) url = 'http://' + url;
+				wrapper = document.createElement('a');
+				wrapper.href = url;
+				wrapper.target = '_blank';
+				wrapper.rel = 'noopener noreferrer';
+				wrapper.setAttribute('contenteditable', 'false');
+				break;
+			default:
+				console.warn('MiniEditor: Unknown command', cmd);
+				return;
 		}
 
-		MiniEditor.positionToolbar(); // Refresh position after action
+		wrapper.appendChild(content);
+		range.insertNode(wrapper);
+
+		// Move selection after the inserted node
+		range.setStartAfter(wrapper);
+		range.collapse(true);
+		sel.removeAllRanges();
+		sel.addRange(range);
+
+		MiniEditor.positionToolbar();
 	}
 
 	static positionToolbar() {
@@ -89,12 +116,16 @@ class MiniEditor {
 		const range = sel.getRangeAt(0);
 		const rect = range.getBoundingClientRect();
 		const top = rect.top + window.scrollY - 50;
-		const left = rect.left + (rect.width / 2);
+
+		// Wait for toolbar to render if hidden, to get accurate width
+		MiniEditor.toolbar.style.display = 'block';
+		MiniEditor.toolbar.style.position = 'absolute';
+
+		const toolbarWidth = MiniEditor.toolbar.offsetWidth;
+		const left = rect.left + (rect.width / 2) - (toolbarWidth / 2);
 
 		MiniEditor.toolbar.style.top = `${top}px`;
 		MiniEditor.toolbar.style.left = `${left}px`;
-		MiniEditor.toolbar.style.position = 'absolute';
-		MiniEditor.toolbar.style.display = 'block';
 
 		clearTimeout(MiniEditor.hideTimeout);
 		MiniEditor.hideTimeout = setTimeout(() => {
