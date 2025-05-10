@@ -25,41 +25,41 @@ class MiniEditor {
 	}
 
 	setup() {
-		// Check selection and position toolbar on both mouse events and focus events
-		const showToolbarIfSelection = () => {
+		this.editor.addEventListener('mouseup', () => {
 			MiniEditor.activeEditor = this;
-			setTimeout(() => {
-				const sel = window.getSelection();
-				if (sel.rangeCount && !sel.isCollapsed && sel.toString().trim() !== '') {
-					// Only show toolbar if there is text selected
-					MiniEditor.positionToolbar();
-				} else {
-					MiniEditor.toolbar.style.display = 'none'; // Hide toolbar if no selection
-				}
-			}, 0);
-		};
+			MiniEditor.positionToolbar();
+			this.updateHiddenInput();
+		});
 
-		// Listen for mouseup, focus, and selection change to ensure immediate update
-		this.editor.addEventListener('mouseup', showToolbarIfSelection);
-		this.editor.addEventListener('keyup', showToolbarIfSelection); // For keyboard input
-		document.addEventListener('selectionchange', showToolbarIfSelection); // To handle selection updates
+		document.addEventListener('selectionchange', () => {
+			if (window.getSelection().toString().trim() !== '') {
+				MiniEditor.activeEditor = this;
+				MiniEditor.positionToolbar();
+				this.updateHiddenInput();
+			}
+		});
 
 		this.editor.addEventListener('paste', e => {
 			e.preventDefault();
 			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-			document.execCommand('insertText', false, text); // Optional for paste
+			document.execCommand('insertText', false, text);
+			this.updateHiddenInput();
 		});
 
 		this.editor.addEventListener('input', () => {
-			const targetInput = document.querySelector(`#input_${this.editor.dataset.id}`);
-			if (targetInput) {
-				let html = this.editor.innerHTML.trim();
-				if (this.editor.lastChild?.tagName === 'BR') {
-					html = html.slice(0, -4);
-				}
-				targetInput.value = html;
-			}
+			this.updateHiddenInput();
 		});
+	}
+
+	updateHiddenInput() {
+		const targetInput = document.querySelector(`#input_${this.editor.dataset.id}`);
+		if (targetInput) {
+			let html = this.editor.innerHTML.trim();
+			if (this.editor.lastChild?.tagName === 'BR') {
+				html = html.slice(0, -4);
+			}
+			targetInput.value = html;
+		}
 	}
 
 	static bindToolbarButtons() {
@@ -101,7 +101,6 @@ class MiniEditor {
 				wrapper.href = url;
 				wrapper.target = '_blank';
 				wrapper.rel = 'noopener noreferrer';
-				wrapper.setAttribute('contenteditable', 'false');
 				break;
 			default:
 				console.warn('MiniEditor: Unknown command', cmd);
@@ -110,14 +109,13 @@ class MiniEditor {
 
 		wrapper.appendChild(content);
 		range.insertNode(wrapper);
-
-		// Move selection after the inserted node
 		range.setStartAfter(wrapper);
 		range.collapse(true);
 		sel.removeAllRanges();
 		sel.addRange(range);
 
 		MiniEditor.positionToolbar();
+		MiniEditor.activeEditor.updateHiddenInput();
 	}
 
 	static positionToolbar() {
@@ -131,10 +129,8 @@ class MiniEditor {
 		const rect = range.getBoundingClientRect();
 		const top = rect.top + window.scrollY - 50;
 
-		// Just REMOVE the inline style
 		MiniEditor.toolbar.style.removeProperty('display');
 
-		// Now it's visible and styled
 		const toolbarWidth = MiniEditor.toolbar.offsetWidth;
 		const left = rect.left + (rect.width / 2) - (toolbarWidth / 2);
 
@@ -145,6 +141,6 @@ class MiniEditor {
 		clearTimeout(MiniEditor.hideTimeout);
 		MiniEditor.hideTimeout = setTimeout(() => {
 			MiniEditor.toolbar.style.display = 'none';
-		}, 3000);
+		}, 4000);
 	}
 }
