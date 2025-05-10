@@ -25,15 +25,29 @@ class MiniEditor {
 	}
 
 	setup() {
-		this.editor.addEventListener('mouseup', () => {
+		// Check selection and position toolbar on both mouse events and focus events
+		const showToolbarIfSelection = () => {
 			MiniEditor.activeEditor = this;
-			MiniEditor.positionToolbar();
-		});
+			setTimeout(() => {
+				const sel = window.getSelection();
+				if (sel.rangeCount && !sel.isCollapsed && sel.toString().trim() !== '') {
+					// Only show toolbar if there is text selected
+					MiniEditor.positionToolbar();
+				} else {
+					MiniEditor.toolbar.style.display = 'none'; // Hide toolbar if no selection
+				}
+			}, 0);
+		};
+
+		// Listen for mouseup, focus, and selection change to ensure immediate update
+		this.editor.addEventListener('mouseup', showToolbarIfSelection);
+		this.editor.addEventListener('keyup', showToolbarIfSelection); // For keyboard input
+		document.addEventListener('selectionchange', showToolbarIfSelection); // To handle selection updates
 
 		this.editor.addEventListener('paste', e => {
 			e.preventDefault();
 			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-			document.execCommand('insertText', false, text); // Optional: still allowed for plaintext paste
+			document.execCommand('insertText', false, text); // Optional for paste
 		});
 
 		this.editor.addEventListener('input', () => {
@@ -117,19 +131,20 @@ class MiniEditor {
 		const rect = range.getBoundingClientRect();
 		const top = rect.top + window.scrollY - 50;
 
-		// Wait for toolbar to render if hidden, to get accurate width
-		MiniEditor.toolbar.style.display = 'block';
-		MiniEditor.toolbar.style.position = 'absolute';
+		// Just REMOVE the inline style
+		MiniEditor.toolbar.style.removeProperty('display');
 
+		// Now it's visible and styled
 		const toolbarWidth = MiniEditor.toolbar.offsetWidth;
 		const left = rect.left + (rect.width / 2) - (toolbarWidth / 2);
 
 		MiniEditor.toolbar.style.top = `${top}px`;
 		MiniEditor.toolbar.style.left = `${left}px`;
+		MiniEditor.toolbar.style.position = 'absolute';
 
 		clearTimeout(MiniEditor.hideTimeout);
 		MiniEditor.hideTimeout = setTimeout(() => {
 			MiniEditor.toolbar.style.display = 'none';
-		}, 4000);
+		}, 3000);
 	}
 }
