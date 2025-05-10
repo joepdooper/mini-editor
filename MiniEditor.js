@@ -1,7 +1,6 @@
 class MiniEditor {
 	static editors = [];
 	static toolbar = null;
-	static activeEditor = null;
 	static hideTimeout = null;
 
 	constructor(editableElement) {
@@ -17,47 +16,38 @@ class MiniEditor {
 			return;
 		}
 
-		document.querySelectorAll(editorSelector).forEach(el => {
-			new MiniEditor(el);
-		});
-
+		document.querySelectorAll(editorSelector).forEach(el => new MiniEditor(el));
 		MiniEditor.bindToolbarButtons();
 	}
 
 	setup() {
-		this.editor.addEventListener('mouseup', () => {
+		this.editor.addEventListener('mouseup', () => this.updateEditorState());
+		document.addEventListener('selectionchange', () => this.updateEditorState());
+		this.editor.addEventListener('paste', e => this.handlePaste(e));
+		this.editor.addEventListener('input', () => this.updateHiddenInput());
+	}
+
+	updateEditorState() {
+		const sel = window.getSelection();
+		if (sel.toString().trim()) {
 			MiniEditor.activeEditor = this;
 			MiniEditor.positionToolbar();
 			this.updateHiddenInput();
-		});
+		}
+	}
 
-		document.addEventListener('selectionchange', () => {
-			if (window.getSelection().toString().trim() !== '') {
-				MiniEditor.activeEditor = this;
-				MiniEditor.positionToolbar();
-				this.updateHiddenInput();
-			}
-		});
-
-		this.editor.addEventListener('paste', e => {
-			e.preventDefault();
-			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-			document.execCommand('insertText', false, text);
-			this.updateHiddenInput();
-		});
-
-		this.editor.addEventListener('input', () => {
-			this.updateHiddenInput();
-		});
+	handlePaste(e) {
+		e.preventDefault();
+		const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+		document.execCommand('insertText', false, text);
+		this.updateHiddenInput();
 	}
 
 	updateHiddenInput() {
 		const targetInput = document.querySelector(`#input_${this.editor.dataset.id}`);
 		if (targetInput) {
 			let html = this.editor.innerHTML.trim();
-			if (this.editor.lastChild?.tagName === 'BR') {
-				html = html.slice(0, -4);
-			}
+			if (this.editor.lastChild?.tagName === 'BR') html = html.slice(0, -4);
 			targetInput.value = html;
 		}
 	}
@@ -66,8 +56,7 @@ class MiniEditor {
 		MiniEditor.toolbar.querySelectorAll('[data-cmd]').forEach(btn => {
 			btn.addEventListener('click', () => {
 				const cmd = btn.dataset.cmd;
-				const val = btn.dataset.value || null;
-				MiniEditor.executeCommand(cmd, val);
+				MiniEditor.executeCommand(cmd, btn.dataset.value);
 			});
 		});
 	}
@@ -81,31 +70,23 @@ class MiniEditor {
 
 		const range = sel.getRangeAt(0);
 		const content = range.extractContents();
-		let wrapper;
+		let wrapper = document.createElement({
+			'bold': 'b',
+			'italic': 'i',
+			'underline': 'u',
+			'link': () => {
+				const url = prompt('Enter URL:');
+				if (!url) return null;
+				const a = document.createElement('a');
+				a.href = url.startsWith('http') ? url : `http://${url}`;
+				a.target = '_blank';
+				a.rel = 'noopener noreferrer';
+				return a;
+			}
+		}[cmd] || cmd);
 
-		switch (cmd) {
-			case 'bold':
-				wrapper = document.createElement('b');
-				break;
-			case 'italic':
-				wrapper = document.createElement('i');
-				break;
-			case 'underline':
-				wrapper = document.createElement('u');
-				break;
-			case 'link':
-				let url = prompt('Enter URL:');
-				if (!url) return;
-				if (!url.startsWith('http')) url = 'http://' + url;
-				wrapper = document.createElement('a');
-				wrapper.href = url;
-				wrapper.target = '_blank';
-				wrapper.rel = 'noopener noreferrer';
-				break;
-			default:
-				console.warn('MiniEditor: Unknown command', cmd);
-				return;
-		}
+		if (!wrapper) return;
+		if (typeof wrapper === 'function') wrapper = wrapper();
 
 		wrapper.appendChild(content);
 		range.insertNode(wrapper);
@@ -121,22 +102,22 @@ class MiniEditor {
 	static positionToolbar() {
 		const sel = window.getSelection();
 		if (!sel.rangeCount || sel.isCollapsed) {
-			MiniEditor.toolbar.style.display = 'none';
+			MiniEditor.toolbar.style.removeProperty('display');
 			return;
 		}
 
-		const range = sel.getRangeAt(0);
-		const rect = range.getBoundingClientRect();
+		const rect = sel.getRangeAt(0).getBoundingClientRect();
+		const toolbarWidth = MiniEditor.toolbar.offsetWidth;
 		const top = rect.top + window.scrollY - 50;
+		const left = rect.left + rect.width / 2 - toolbarWidth / 2;
+
+		Object.assign(MiniEditor.toolbar.style, {
+			top: `${top}px`,
+			left: `${left}px`,
+			position: 'absolute'
+		});
 
 		MiniEditor.toolbar.style.removeProperty('display');
-
-		const toolbarWidth = MiniEditor.toolbar.offsetWidth;
-		const left = rect.left + (rect.width / 2) - (toolbarWidth / 2);
-
-		MiniEditor.toolbar.style.top = `${top}px`;
-		MiniEditor.toolbar.style.left = `${left}px`;
-		MiniEditor.toolbar.style.position = 'absolute';
 
 		clearTimeout(MiniEditor.hideTimeout);
 		MiniEditor.hideTimeout = setTimeout(() => {
