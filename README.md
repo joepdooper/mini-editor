@@ -12,9 +12,21 @@ A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 
 ```html
 <div id="toolbar">
-    <button data-cmd="strong">Bold</button>
-    <button data-cmd="em">Italic</button>
-    <button data-cmd="u">Underline</button>
+    <button data-cmd="bold">Bold</button>
+    <button data-cmd="italic">Italic</button>
+    <button data-cmd="underline">Underline</button>
     <button data-cmd="link">Link</button>
 </div>
+
+<div class="editor-block" contenteditable="true" data-id="1"></div>
+<input type="hidden" id="input_1" name="content_1">
+
+<div class="editor-block" contenteditable="true" data-id="2"></div>
+<input type="hidden" id="input_2" name="content_2">
+```
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    MiniEditor.initAll('.editor-block', '#toolbar');
+});
 ```

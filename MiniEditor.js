@@ -1,82 +1,104 @@
 class MiniEditor {
-	constructor(editorId, toolbarId) {
-		this.editor = document.getElementById(editorId);
-		this.toolbar = document.getElementById(toolbarId);
-		this.init();
+	static editors = [];
+	static toolbar = null;
+	static activeEditor = null;
+	static hideTimeout = null;
+
+	constructor(editableElement) {
+		this.editor = editableElement;
+		MiniEditor.editors.push(this);
+		this.setup();
 	}
 
-	init() {
-		this.bindToolbarButtons();
-		this.handlePaste();
-		this.editor.addEventListener('mouseup', () => this.positionToolbar());
+	static initAll(editorSelector, toolbarSelector) {
+		MiniEditor.toolbar = document.querySelector(toolbarSelector);
+		if (!MiniEditor.toolbar) {
+			console.warn('MiniEditor: toolbar not found:', toolbarSelector);
+			return;
+		}
+
+		document.querySelectorAll(editorSelector).forEach(el => {
+			new MiniEditor(el);
+		});
+
+		MiniEditor.bindToolbarButtons();
 	}
 
-	bindToolbarButtons() {
-		this.toolbar.querySelectorAll('[data-cmd]').forEach(btn => {
-			btn.addEventListener('click', (e) => {
+	setup() {
+		this.editor.addEventListener('mouseup', () => {
+			MiniEditor.activeEditor = this;
+			MiniEditor.positionToolbar();
+		});
+
+		this.editor.addEventListener('paste', e => {
+			e.preventDefault();
+			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+			document.execCommand('insertText', false, text);
+		});
+
+		this.editor.addEventListener('input', () => {
+			const targetInput = document.querySelector(`#input_${this.editor.dataset.id}`);
+			if (targetInput) {
+				let html = this.editor.innerHTML.trim();
+				if (this.editor.lastChild?.tagName === 'BR') {
+					html = html.slice(0, -4);
+				}
+				targetInput.value = html;
+			}
+		});
+	}
+
+	static bindToolbarButtons() {
+		MiniEditor.toolbar.querySelectorAll('[data-cmd]').forEach(btn => {
+			btn.addEventListener('click', () => {
 				const cmd = btn.dataset.cmd;
-				const value = btn.dataset.value || null;
-				this.executeCommand(cmd, value);
+				const val = btn.dataset.value || null;
+				MiniEditor.executeCommand(cmd, val);
 			});
 		});
 	}
 
-	executeCommand(cmd, value = null) {
+	static executeCommand(cmd, value = null) {
+		const sel = window.getSelection();
+		if (!sel.rangeCount || sel.isCollapsed) return;
+
 		if (cmd === 'link') {
-			const url = prompt('Enter URL:');
-			if (url) this.insertLink(url);
+			let url = prompt('Enter URL:');
+			if (!url) return;
+			if (!url.startsWith('http')) url = 'http://' + url;
+			document.execCommand('createLink', false, url);
+
+			const a = document.getSelection().focusNode?.parentNode;
+			if (a && a.tagName === 'A') {
+				a.setAttribute('contenteditable', 'false');
+			}
+		} else {
+			document.execCommand(cmd, false, value);
+		}
+
+		MiniEditor.positionToolbar(); // Refresh position after action
+	}
+
+	static positionToolbar() {
+		const sel = window.getSelection();
+		if (!sel.rangeCount || sel.isCollapsed) {
+			MiniEditor.toolbar.style.display = 'none';
 			return;
 		}
 
-		this.wrapSelection(cmd, value);
-	}
-
-	wrapSelection(tag, value = null) {
-		const sel = window.getSelection();
-		if (!sel.rangeCount || sel.isCollapsed) return;
 		const range = sel.getRangeAt(0);
-		const el = document.createElement(tag);
-		if (value) el.setAttribute('value', value);
-		range.surroundContents(el);
-	}
-
-	insertLink(url) {
-		const sel = window.getSelection();
-		if (!sel.rangeCount || sel.isCollapsed) return;
-		const range = sel.getRangeAt(0);
-		const a = document.createElement('a');
-		a.href = url.startsWith('http') ? url : `http://${url}`;
-		a.textContent = range.toString();
-		a.setAttribute('contenteditable', 'false');
-		range.deleteContents();
-		range.insertNode(a);
-	}
-
-	handlePaste() {
-		this.editor.addEventListener('paste', (e) => {
-			e.preventDefault();
-			const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-			document.execCommand('insertText', false, text); // fallback
-		});
-	}
-
-	positionToolbar() {
-		const selection = window.getSelection();
-		if (!selection.rangeCount || selection.isCollapsed) {
-			this.toolbar.style.display = 'none';
-			return;
-		}
-
-		const range = selection.getRangeAt(0);
 		const rect = range.getBoundingClientRect();
-		this.toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
-		this.toolbar.style.left = `${rect.left + rect.width / 2}px`;
-		this.toolbar.style.position = 'absolute';
-		this.toolbar.style.display = 'block';
+		const top = rect.top + window.scrollY - 50;
+		const left = rect.left + (rect.width / 2);
 
-		clearTimeout(this.hideTimeout);
-		this.hideTimeout = setTimeout(() => {
-			this.toolbar.style.display = 'none';
+		MiniEditor.toolbar.style.top = `${top}px`;
+		MiniEditor.toolbar.style.left = `${left}px`;
+		MiniEditor.toolbar.style.position = 'absolute';
+		MiniEditor.toolbar.style.display = 'block';
+
+		clearTimeout(MiniEditor.hideTimeout);
+		MiniEditor.hideTimeout = setTimeout(() => {
+			MiniEditor.toolbar.style.display = 'none';
 		}, 4000);
 	}
 }
