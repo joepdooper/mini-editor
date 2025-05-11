@@ -1,4 +1,4 @@
-# mini-editor
+# MiniEditor
 
 A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 
