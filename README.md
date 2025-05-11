@@ -2,6 +2,12 @@
 
 A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 
+### Install:
+
+```bash
+npm install @joepdoooper/mini-editor
+```
+
 ### Features:
 
 - Inline content editing with a floating formatting toolbar
@@ -11,18 +17,18 @@ A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 - Syncs editable content with hidden inputs for form submission
 
 ```html
+<div class="editor-block" contenteditable="true" data-id="1"></div>
+<input type="hidden" id="input_1" name="content_1">
+
+<div class="editor-block" contenteditable="true" data-id="2"></div>
+<input type="hidden" id="input_2" name="content_2">
+
 <div id="toolbar" style="display: none;">
     <button title="Bold" data-cmd="bold">Bold</button>
     <button title="Italic" data-cmd="italic">Italic</button>
     <button title="Underline" data-cmd="underline">Underline</button>
     <button title="Link" data-cmd="link">Link</button>
 </div>
-
-<div class="editor-block" contenteditable="true" data-id="1"></div>
-<input type="hidden" id="input_1" name="content_1">
-
-<div class="editor-block" contenteditable="true" data-id="2"></div>
-<input type="hidden" id="input_2" name="content_2">
 ```
 
 ```javascript

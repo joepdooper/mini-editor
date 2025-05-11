@@ -1,0 +1,37 @@
+{
+  "name": "@joepdooper/mini-editor",
+  "version": "1.0.0",
+  "description": "A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.",
+  "keywords": [
+    "editor",
+    "text-editor",
+    "rich-text",
+    "wysiwyg",
+    "contenteditable",
+    "inline-editor",
+    "toolbar",
+    "javascript",
+    "lightweight",
+    "minimal",
+    "html-editor",
+    "custom-toolbar",
+    "inline-styling",
+    "formatting",
+    "mini-editor"
+  ],
+  "homepage": "https://github.com/joepdooper/mini-editor#readme",
+  "bugs": {
+    "url": "https://github.com/joepdooper/mini-editor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joepdooper/mini-editor.git"
+  },
+  "license": "MIT",
+  "author": "Joep Dooper",
+  "type": "module",
+  "main": "MiniEditor.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
