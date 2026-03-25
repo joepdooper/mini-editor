@@ -12,27 +12,19 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout the code
+      # Step 1: Checkout
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Setup Node.js
+      # Step 2: Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      # Optional: handle scoped packages with OIDC
-      - name: Configure npm for OIDC
-        run: |
-          echo "//registry.npmjs.org/:_authToken=\${{ steps.oidc-token.outputs.npm_token }}" > ~/.npmrc
-        id: oidc-token
-        run: echo "npm_token=$(npm token create --cid ${{ github.actor }})" >> $GITHUB_ENV
-
-      # Install dependencies
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
@@ -41,12 +33,12 @@ jobs:
             npm install
           fi
 
-      # Build step
+      # Step 4: Build (optional)
       - name: Build
         run: npm run build || echo "No build step defined"
 
-      # Skip publish if version already exists
-      - name: Check npm for existing version
+      # Step 5: Skip publish if version exists
+      - name: Check version
         id: check_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -56,7 +48,7 @@ jobs:
           else
             echo "skip_publish=false" >> $GITHUB_OUTPUT
 
-      # Publish
+      # Step 6: Publish via OIDC
       - name: Publish
         if: steps.check_version.outputs.skip_publish == 'false'
         run: npm publish --access public
