@@ -1,6 +1,6 @@
 {
   "name": "@joepdooper/mini-editor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.",
   "keywords": [
     "editor",
@@ -31,6 +31,9 @@
   "author": "Joep Dooper",
   "type": "module",
   "main": "MiniEditor.js",
+  "exports": {
+    ".": "./MiniEditor.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   }

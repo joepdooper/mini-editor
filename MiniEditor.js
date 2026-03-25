@@ -125,3 +125,5 @@ class MiniEditor {
 		}, 4000);
 	}
 }
+
+export default MiniEditor;
