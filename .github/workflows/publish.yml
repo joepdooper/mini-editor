@@ -10,18 +10,46 @@ jobs:
     name: Publish Package
     runs-on: ubuntu-latest
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup
+
+      # Step 2: Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - name: Prepare
-        run: npm ci
+
+      # Step 3: Install dependencies (use ci if lockfile exists, otherwise install)
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # Step 4: Build step
       - name: Build
         run: npm run build || echo "No build step defined"
+
+      # Step 5: Check if npm version already exists
+      - name: Check npm for existing version
+        id: check_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          NAME=$(node -p "require('./package.json').name")
+          if npm view "$NAME@$VERSION" > /dev/null 2>&1; then
+            echo "Version $VERSION already exists. Skipping publish."
+            echo "skip_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_publish=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Step 6: Publish package if version is new
       - name: Publish
+        if: steps.check_version.outputs.skip_publish == 'false'
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
