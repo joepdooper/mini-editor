@@ -1,6 +1,9 @@
 {
   "name": "@joepdooper/mini-editor",
   "version": "1.0.2",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.",
   "keywords": [
     "editor",
