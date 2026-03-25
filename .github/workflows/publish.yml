@@ -13,18 +13,18 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout
+      # 1️⃣ Checkout code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      # Step 3: Install dependencies
+      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
@@ -33,22 +33,10 @@ jobs:
             npm install
           fi
 
-      # Step 4: Build (optional)
+      # 4️⃣ Build step (optional)
       - name: Build
         run: npm run build || echo "No build step defined"
 
-      # Step 5: Skip publish if version exists
-      - name: Check version
-        id: check_version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          NAME=$(node -p "require('./package.json').name")
-          if npm view "$NAME@$VERSION" > /dev/null 2>&1; then
-            echo "skip_publish=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_publish=false" >> $GITHUB_OUTPUT
-
-      # Step 6: Publish via OIDC
+      # 5️⃣ Publish directly via OIDC
       - name: Publish
-        if: steps.check_version.outputs.skip_publish == 'false'
         run: npm publish --access public
