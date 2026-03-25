@@ -1,5 +1,9 @@
 name: publish
 
+permissions:
+  contents: read
+  id-token: write
+
 on:
   push:
     tags:
@@ -7,21 +11,28 @@ on:
 
 jobs:
   publish:
-    name: Publish Package
     runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Checkout the repository
+      # Checkout the code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
-      # Step 3: Install dependencies (use ci if lockfile exists, otherwise install)
+      # Optional: handle scoped packages with OIDC
+      - name: Configure npm for OIDC
+        run: |
+          echo "//registry.npmjs.org/:_authToken=\${{ steps.oidc-token.outputs.npm_token }}" > ~/.npmrc
+        id: oidc-token
+        run: echo "npm_token=$(npm token create --cid ${{ github.actor }})" >> $GITHUB_ENV
+
+      # Install dependencies
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
@@ -30,26 +41,22 @@ jobs:
             npm install
           fi
 
-      # Step 4: Build step
+      # Build step
       - name: Build
         run: npm run build || echo "No build step defined"
 
-      # Step 5: Check if npm version already exists
+      # Skip publish if version already exists
       - name: Check npm for existing version
         id: check_version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           NAME=$(node -p "require('./package.json').name")
           if npm view "$NAME@$VERSION" > /dev/null 2>&1; then
-            echo "Version $VERSION already exists. Skipping publish."
             echo "skip_publish=true" >> $GITHUB_OUTPUT
           else
             echo "skip_publish=false" >> $GITHUB_OUTPUT
-          fi
 
-      # Step 6: Publish package if version is new
+      # Publish
       - name: Publish
         if: steps.check_version.outputs.skip_publish == 'false'
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
