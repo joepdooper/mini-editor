@@ -5,7 +5,7 @@ A lightweight, dependency-free WYSIWYG editor implemented in vanilla JavaScript.
 ### Install:
 
 ```bash
-npm install @joepdoooper/mini-editor
+npm install @joepdooper/mini-editor
 ```
 
 ### Features:
